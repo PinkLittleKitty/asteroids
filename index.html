@@ -82,6 +82,31 @@
         // configurar el bucle del juego
         setInterval(update, 1000 / FPS);
 
+        canv.addEventListener("touchstart", touchStart);
+        canv.addEventListener("touchmove", touchMove);
+        canv.addEventListener("touchend", touchEnd);
+        
+        function touchStart(event) {
+            shootLaser();
+        }
+        
+        function touchMove(event) {
+            event.preventDefault();
+        
+            var touch = event.touches[0];
+            var touchX = touch.clientX;
+            var touchY = touch.clientY;
+        
+            var angle = Math.atan2(touchY - ship.y, touchX - ship.x);
+            ship.rot = angle - 90 / 180 * Math.PI;
+            ship.thrusting = true;
+        }
+        
+        function touchEnd(event) {
+            ship.thrusting = false;
+            ship.rot = 0;
+        }
+
         function createAsteroidBelt() {
             roids = [];
             var x, y;
