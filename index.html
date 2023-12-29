@@ -30,10 +30,14 @@
         const LASER_MAX = 10; // número máximo de láseres en pantalla a la vez
         const LASER_SPD = 500; // velocidad de los láseres en píxeles por segundo
         const ROID_JAG = 0.4; // irregularidad de los asteroides (0 = ninguna, 1 = mucha)
+        const ROID_PTS_LGE = 20; // número de puntos de los asteroides grandes
+        const ROID_PTS_MED = 50; // número de puntos de los asteroides medianos
+        const ROID_PTS_SML = 100; // número de puntos de los asteroides chiquitos
         const ROID_NUM = 3; // número inicial de asteroides
         const ROID_SIZE = 100; // tamaño inicial de los asteroides en píxeles
         const ROID_SPD = 50; // velocidad máxima inicial de los asteroides en píxeles por segundo
         const ROID_VERT = 10; // número promedio de vértices en cada asteroide
+        const SAVE_KEY_SCORE = "highscore";   
         const SHIP_BLINK_DUR = 0.1; // duración en segundos de un solo parpadeo durante la invisibilidad de la nave
         const SHIP_EXPLODE_DUR = 0.3; // duración de la explosión de la nave en segundos
         const SHIP_INV_DUR = 3; // duración de la invisibilidad de la nave en segundos
@@ -41,7 +45,7 @@
         const SHIP_THRUST = 5; // aceleración de la nave en píxeles por segundo al cuadrado
         const SHIP_TURN_SPD = 360; // velocidad de giro en grados por segundo
         const SHOW_BOUNDING = false; // mostrar u ocultar límites de colisión
-        const SHOW_CENTRE_DOT = false; // mostrar u ocultar el punto central de la nave
+        const SHOW_CENTER_DOT = false; // mostrar u ocultar el punto central de la nave
         const TEXT_FADE_TIME = 2.5; // duración de la transición del texto en segundos
         const TEXT_SIZE = 40; // tamaño de la fuente del texto en píxeles
 
@@ -59,7 +63,7 @@
         }
 
         // configurar parámetros del juego.
-        var level, lives, roids, ship, text, textAlpha;
+        var level, lives, roids, score, highscore, ship, text, textAlpha;
         newGame();
 
         // configurar controladores de eventos
@@ -91,9 +95,19 @@
             if (r == Math.ceil(ROID_SIZE / 2)) { // asteroide grande
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 4)));
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 4)));
+                score += ROID_PTS_LGE;
             } else if (r == Math.ceil(ROID_SIZE / 4)) { // asteroide mediano
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 8)));
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 8)));
+                score += ROID_PTS_MED;
+            } else { // asteroide chico
+                score += ROID_PTS_SML;
+            }
+
+            // checkear la highscore
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem(SAVE_KEY_SCORE, highscore);
             }
 
             // destruir el asteroide
@@ -203,7 +217,17 @@
         function newGame() {
             level = 0;
             lives = GAME_LIVES;
+            score = 0;
             ship = newShip();
+
+            var scoreString = localStorage.getItem(SAVE_KEY_SCORE);
+            
+            if (scoreString == null) {
+                highscore = 0;
+            } else {
+                highscore = parseInt(scoreString);
+            }
+
             newLevel();
         }
 
@@ -383,7 +407,7 @@
             }
 
             // mostrar el punto central de la nave espacial
-            if (SHOW_CENTRE_DOT) {
+            if (SHOW_CENTER_DOT) {
                 ctx.fillStyle = "red";
                 ctx.fillRect(ship.x - 1, ship.y - 1, 2, 2);
             }
@@ -416,6 +440,7 @@
             if (textAlpha >= 0) {
                 ctx.fillStyle = "rgba(255,255,255," + textAlpha + ")";
                 ctx.textAlign = "center";
+                textBaseline = "middle";
                 ctx.font = "bold " + TEXT_SIZE + "px monospace";
                 ctx.fillText(text, canv.width / 2, canv.height * 0.75);
                 textAlpha -= (1.0 / TEXT_FADE_TIME / FPS);
@@ -429,6 +454,20 @@
                 lifeColour = exploding && i == lives - 1 ? "red" : "white";
                 drawShip(SHIP_SIZE + i * SHIP_SIZE * 1.2, SHIP_SIZE, 0.5 * Math.PI, lifeColour);
             }
+
+            // dibujar la puntuación
+            ctx.fillStyle = "white";
+            ctx.textAlign = "right";
+            textBaseline = "middle";
+            ctx.font = TEXT_SIZE + "px monospace";
+            ctx.fillText(score, canv.width - SHIP_SIZE / 2, SHIP_SIZE);
+
+            // dibujar la mayor puntuación
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            textBaseline = "middle";
+            ctx.font = (TEXT_SIZE * 0.70) + "px monospace";
+            ctx.fillText("Mejor: " + highscore, canv.width / 2, SHIP_SIZE);
 
             // detectar impactos de láser en asteroides
             var ax, ay, ar, lx, ly;
