@@ -37,7 +37,7 @@
         const ROID_SIZE = 100; // tamaño inicial de los asteroides en píxeles
         const ROID_SPD = 50; // velocidad máxima inicial de los asteroides en píxeles por segundo
         const ROID_VERT = 10; // número promedio de vértices en cada asteroide
-        const SAVE_KEY_SCORE = "highscore";   
+        const SAVE_KEY_SCORE = "highscore"; // clave del almacenamiento de la puntuación
         const SHIP_BLINK_DUR = 0.1; // duración en segundos de un solo parpadeo durante la invisibilidad de la nave
         const SHIP_EXPLODE_DUR = 0.3; // duración de la explosión de la nave en segundos
         const SHIP_INV_DUR = 3; // duración de la invisibilidad de la nave en segundos
@@ -46,6 +46,7 @@
         const SHIP_TURN_SPD = 360; // velocidad de giro en grados por segundo
         const SHOW_BOUNDING = false; // mostrar u ocultar límites de colisión
         const SHOW_CENTER_DOT = false; // mostrar u ocultar el punto central de la nave
+        const SOUND_ON = true; // activar o desactivar los efectos de sonido
         const TEXT_FADE_TIME = 2.5; // duración de la transición del texto en segundos
         const TEXT_SIZE = 40; // tamaño de la fuente del texto en píxeles
 
@@ -61,6 +62,14 @@
             canv.width = window.innerWidth;
             canv.height = window.innerHeight;
         }
+
+        // configurar efectos de sonido
+        var fxLaser = new Sound("SFX/fire.wav", 5, 0.3)
+        var fxExplode = new Sound("SFX/explode.m4a", 1, 0.3)
+        var fxHitLarge = new Sound("SFX/bangLarge.wav", 5, 0.3)
+        var fxHitMedium = new Sound("SFX/bangMedium.wav", 5, 0.3)
+        var fxHitSmall = new Sound("SFX/bangSmall.wav", 5, 0.3)
+        var fxThrust = new Sound("SFX/thrust.m4a", 1, 0.3)
 
         // configurar parámetros del juego.
         var level, lives, roids, score, highscore, ship, text, textAlpha;
@@ -96,12 +105,15 @@
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 4)));
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 4)));
                 score += ROID_PTS_LGE;
+                fxHitLarge.play();
             } else if (r == Math.ceil(ROID_SIZE / 4)) { // asteroide mediano
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 8)));
                 roids.push(newAsteroid(x, y, Math.ceil(ROID_SIZE / 8)));
                 score += ROID_PTS_MED;
+                fxHitMedium.play();
             } else { // asteroide chico
                 score += ROID_PTS_SML;
+                fxHitSmall.play();
             }
 
             // checkear la highscore
@@ -147,6 +159,7 @@
 
         function explodeShip() {
             ship.explodeTime = Math.ceil(SHIP_EXPLODE_DUR * FPS);
+            fxExplode.play();
         }
 
         function gameOver() {
@@ -221,7 +234,7 @@
             ship = newShip();
 
             var scoreString = localStorage.getItem(SAVE_KEY_SCORE);
-            
+
             if (scoreString == null) {
                 highscore = 0;
             } else {
@@ -269,10 +282,33 @@
                     dist: 0,
                     explodeTime: 0
                 });
+
+                fxLaser.play();
             }
 
             // evitar disparar más
             ship.canShoot = false;
+        }
+
+        function Sound(src, maxStreams = 1, vol = 1) {
+            this.streamNum = 0;
+            this.streams = [];
+            for (var i = 0; i < maxStreams; i++) {
+                this.streams.push(new Audio(src));
+                this.streams[i].volume = vol;
+            }
+
+            this.play = function () {
+                if (SOUND_ON) {
+                    this.streamNum = (this.streamNum + 1) % maxStreams;
+                    this.streams[this.streamNum].play();
+                }
+            }
+
+            this.stop = function () {
+                this.streams[this.streamNum].pause();
+                this.streams[this.streamNum].currentTime = 0;
+            }
         }
 
         function update() {
@@ -327,6 +363,7 @@
             if (ship.thrusting && !ship.dead) {
                 ship.thrust.x += SHIP_THRUST * Math.cos(ship.a) / FPS;
                 ship.thrust.y -= SHIP_THRUST * Math.sin(ship.a) / FPS;
+                fxThrust.play();
 
                 // dibujar el propulsor
                 if (!exploding && blinkOn) {
@@ -354,6 +391,7 @@
                 // aplicar fricción (frenar la nave cuando no está acelerando)
                 ship.thrust.x -= FRICTION * ship.thrust.x / FPS;
                 ship.thrust.y -= FRICTION * ship.thrust.y / FPS;
+                fxThrust.stop();
             }
 
             // dibujar la nave espacial triangular
