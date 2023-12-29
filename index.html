@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<style>
+    html,
+    body {
+  width: 100%;
+  height: 100%;
+  margin: 0px;
+  border: 0;
+  overflow: hidden;
+  display: block;
+}
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>Asteroids</title>
+    <style></style>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+    const FPS = 30; //Frames por segundo.
+    const FRICTION = 0.7; //Fricción del espacio.
+    const SHIP_SIZE = 30; //Tamaño de la nave en pixeles.
+    const SHIP_THRUST = 5; //Velocidad de aceleración de la nave.
+    const TURN_SPEED = 360; //Velocidad de giro en grados por segundo.
+
+    /** @type {HTMLCanvasElement} */
+    const canv = document.getElementById("gameCanvas");
+    const ctx = canv.getContext("2d");
+
+    var ship = {
+        x: canv.width / 2,
+        y: canv.height / 2,
+        r: SHIP_SIZE / 2,
+        a: 90 / 180 * Math.PI, //Convertirlo a radianes.
+        rot: 0,
+        thrusting: false,
+        thrust: {
+            x: 0,
+            y: 0
+        }
+    };
+
+    //Configurar controladores de eventos.
+    document.addEventListener("keydown", keyDown);
+    document.addEventListener("keyup", keyUp);
+
+    //Inicializar el loop del juego.
+    setInterval(update, 1000 / FPS);
+
+    function keyDown(/** @type {KeyboardEvent} */ ev)
+    {
+        switch(ev.keyCode)
+        {
+            case 37: //Flecha Izquierda
+                ship.rot = TURN_SPEED / 180 * Math.PI / FPS;
+                break;
+
+            case 38: //Flecha Arriba
+                ship.thrusting = true;
+                break;
+
+            case 39: //Flecha Derecha
+                ship.rot = -TURN_SPEED / 180 * Math.PI / FPS;
+                break;
+        }
+    }
+
+    function keyUp(/** @type {KeyboardEvent} */ ev)
+    {
+        switch(ev.keyCode)
+        {
+            case 37: //Flecha Izquierda
+                ship.rot = 0;
+                break;
+
+            case 38: //Flecha Arriba
+                ship.thrusting = false;
+                break;
+
+            case 39: //Flecha Derecha
+                ship.rot = 0;
+                break;
+        }
+    }
+
+    function update()
+    {
+        //Dibujar el espacio.
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canv.width, canv.height);
+
+        //Aceleración de la nave.
+        if (ship.thrusting)
+        {
+            ship.thrust.x += SHIP_THRUST * Math.cos(ship.a) / FPS;
+            ship.thrust.y -= SHIP_THRUST * Math.sin(ship.a) / FPS;
+
+            //dibujar el thrust
+            ctx.fillStyle = "red";
+            ctx.strokeStyle = "yellow";
+            ctx.lineWidth = SHIP_SIZE / 10;
+            ctx.beginPath();
+            ctx.moveTo( //Atrás Izquierda
+                ship.x - ship.r * (2 / 3 * Math.cos(ship.a) +  0.5 * Math.sin(ship.a)),
+                ship.y + ship.r * (2 / 3 * Math.sin(ship.a) - 0.5 * Math.cos(ship.a))
+            );
+            ctx.lineTo( //Atrás centro
+                ship.x - ship.r * 6 / 3 * Math.cos(ship.a),
+                ship.y + ship.r * 6 / 3 * Math.sin(ship.a)
+            );
+            ctx.lineTo( //Atrás Derecha
+                ship.x - ship.r * (2 / 3 * Math.cos(ship.a) - 0.5 * Math.sin(ship.a)),
+                ship.y + ship.r * (2 / 3 * Math.sin(ship.a) + 0.5 * Math.cos(ship.a))
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            ship.thrust.x -= FRICTION * ship.thrust.x / FPS;
+            ship.thrust.y -= FRICTION * ship.thrust.y / FPS;
+        }
+
+        //Dibujar una nave triangular.
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = SHIP_SIZE / 20;
+        ctx.beginPath();
+        ctx.moveTo( //Nariz de la nave
+            ship.x + 4 / 3 * ship.r * Math.cos(ship.a),
+            ship.y - 4 / 3 * ship.r * Math.sin(ship.a)
+        );
+        ctx.lineTo( //Atrás Izquierda
+            ship.x - ship.r * (2 / 3 * Math.cos(ship.a) + Math.sin(ship.a)),
+            ship.y + ship.r * (2 / 3 * Math.sin(ship.a) - Math.cos(ship.a))
+        );
+        ctx.lineTo( //Atrás Derecha
+            ship.x - ship.r * (2 / 3 * Math.cos(ship.a) - Math.sin(ship.a)),
+            ship.y + ship.r * (2 / 3 * Math.sin(ship.a) + Math.cos(ship.a))
+        );
+        ctx.closePath();
+        ctx.stroke();
+
+        //Rotar la nave.
+        ship.a += ship.rot;
+
+        //Mover la nave.
+        ship.x += ship.thrust.x;
+        ship.y += ship.thrust.y;
+
+        //Limites del espacio.
+        if (ship.x < 0 - ship.r) {
+            ship.x = canv.width + ship.r;
+        } else if (ship.x > canv.width + ship.r) {
+            ship.x = 0 - ship.r;
+        }
+
+        if (ship.y < 0 - ship.r) {
+            ship.y = canv.height + ship.r;
+        } else if (ship.y > canv.height + ship.r) {
+            ship.y = 0 - ship.r;
+        }
+
+        //Punto del centro.
+        //ctx.fillStyle = "red";
+        //ctx.fillRect(ship.x - 1, ship.y - 1, 2, 2);
+    }
+</script>
+</body>
+
+</html>
