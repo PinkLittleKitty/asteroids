@@ -11,16 +11,52 @@
         overflow: hidden;
         display: block;
     }
+
+    #gameOverScreen,
+    #leaderboard {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+    }
+
+    #leaderboardList {
+        text-align: left;
+        margin: 0 auto;
+        width: 200px;
+    }
 </style>
 
 <head>
     <meta charset="UTF-8">
     <title>Asteroides</title>
     <style></style>
+    <script src="https://cdn.jsdelivr.net/npm/dreamlo.js@1.3.2/dist/dreamlo.min.js"></script>
 </head>
 
 <body>
     <canvas id="gameCanvas" width="760" height="570"></canvas>
+    <div id="gameOverScreen" style="display:none; position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
+        <h2>Fin del Juego</h2>
+        <label for="playerName">Tu Nombre (3 Letras):</label>
+        <input type="text" id="playerName" maxlength="3" style="text-transform:uppercase"/>
+        <button onclick="submitScore()">Enviar Puntuación</button>
+        <h2>(Puede que tengas que recargar para ver las últimas puntuaciones)</h2>
+    </div>
+
+    <div id="leaderboard" style="display:none; position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
+        <h2>Tabla de Líderes</h2>
+        <style type="text/css">
+            .dreamloLBTable { border-collapse:collapse;text-align:center;width: 200px; }
+            .dreamloLBTable th { border-bottom: 1px solid #EEEEEE;font-weight:bold;margin:0;padding:4px; }
+            .dreamloLBTable td { border-bottom: 1px solid#EEEEEE;margin:0;padding:4px; }
+            </style>
+            <script src="http://dreamlo.com/lb/659ec0958f40bc0fccb64cd8/js" type="text/javascript"></script>
+        <button onclick="playAgain()">Jugar de Nuevo</button>
+    </div>
     <script>
         const FPS = 30; // fotogramas por segundo
         const FRICTION = 0.7; // coeficiente de fricción del espacio (0 = sin fricción, 1 = mucha fricción)
@@ -49,10 +85,21 @@
         const SOUND_ON = true; // activar o desactivar los efectos de sonido
         const TEXT_FADE_TIME = 2.5; // duración de la transición del texto en segundos
         const TEXT_SIZE = 40; // tamaño de la fuente del texto en píxeles
+        const PUBLIC_KEY = "659ec0958f40bc0fccb64cd8";
+        const PRIVATE_KEY = "5bxxa49JXUG5bx4oTvk8owBIMKE8sAlU2m0DRL9vTUuA";
+        const USE_HTTPS = false;
 
         /** @type {HTMLCanvasElement} */
         var canv = document.getElementById("gameCanvas");
         var ctx = canv.getContext("2d");
+
+        /* Leaderboard */
+        var playerNameInput = document.getElementById("playerName");
+        var gameOverScreen = document.getElementById("gameOverScreen");
+        var leaderboardScreen = document.getElementById("leaderboard");
+        var leaderboardList = document.getElementById("leaderboardList");
+
+        dreamlo.initialize(PUBLIC_KEY, PRIVATE_KEY, USE_HTTPS);
 
         resizeCanvas();
 
@@ -166,7 +213,32 @@
             ship.dead = true;
             text = "Fin Del Juego";
             textAlpha = 1.0;
+            gameOverScreen.style.display = "block";
         }
+
+        function submitScore() {
+            var playerName = playerNameInput.value.trim();
+            if (playerName !== "") {
+                var scoreData = {
+                    name: playerName,
+                    points: score
+                };
+
+                dreamlo.addScore(scoreData, dreamlo.ScoreFormat.Json, dreamlo.SortOrder.PointsDescending, true)
+            }
+        }
+
+        function displayLeaderboard() {
+            leaderboardList.innerHTML = "";
+            
+        }
+
+        function playAgain() {
+            newGame();
+            gameOverScreen.style.display = "none";
+            leaderboardScreen.style.display = "none";
+        }
+
 
         function keyDown(/** @type {KeyboardEvent} */ ev) {
             if (ship.dead) return;
@@ -483,7 +555,7 @@
                 ctx.fillText(text, canv.width / 2, canv.height * 0.75);
                 textAlpha -= (1.0 / TEXT_FADE_TIME / FPS);
             } else if (ship.dead) {
-                newGame();
+                showLeaderboard();
             }
 
             // dibujar las vidas
@@ -641,6 +713,12 @@
                 }
             }
         }
+
+        function showLeaderboard() {
+            leaderboard.style.display = "block";
+            leaderboardScreen.style.display = "block";
+        }
+
     </script>
 </body>
 </html>
